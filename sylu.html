@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Сылу</title>
+<style>
+:root{--bg:#f4fafc;--card:#fff;--tx:#12303a;--mut:#6b8790;--blue:#00AFCA;--gold:#FEC50C;--ok:#2e9d5b;--bad:#d9534f;--line:#dbe9ee;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a1f;--card:#17272e;--tx:#e8f3f6;--mut:#8fa9b2;--line:#27404a}}
+:root[data-theme="dark"]{--bg:#0e1a1f;--card:#17272e;--tx:#e8f3f6;--mut:#8fa9b2;--line:#27404a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:480px;margin:0 auto;padding:16px}
+.top{background:var(--blue);color:#fff;border-radius:18px;padding:16px;margin-bottom:16px}
+.top h1{margin:0 0 4px;font-size:22px}
+.stats{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pill{background:rgba(255,255,255,.22);border-radius:99px;padding:6px 12px;font-size:14px;font-weight:600}
+.bar{height:8px;background:rgba(255,255,255,.3);border-radius:9px;margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.lesson{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;color:var(--tx);font:inherit;cursor:pointer}
+.lesson small{color:var(--mut)}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;font-size:17px;font-weight:700;background:var(--gold);color:#222;cursor:pointer;margin-top:12px}
+.btn.ghost{background:transparent;color:var(--mut);border:1px solid var(--line)}
+.flash{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer}
+.kk{font-size:34px;font-weight:800}
+.ru{font-size:22px;margin-top:12px;color:var(--mut)}
+.opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--tx);border:2px solid var(--line);border-radius:14px;padding:14px;font-size:18px;margin-top:10px;cursor:pointer}
+.opt.ok{border-color:var(--ok);background:rgba(46,157,91,.15)}
+.opt.bad{border-color:var(--bad);background:rgba(217,83,79,.15)}
+.fact{background:rgba(254,197,12,.18);border-radius:12px;padding:12px;font-size:15px;margin-top:12px}
+.center{text-align:center}
+.small{font-size:14px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+var LESSONS=[
+{id:1,title:"Сәлем!",sub:"Приветствия",fact:"Сәлем неформальное приветствие, а Сәлеметсіз бе вежливое, на «вы».",cards:[["Сәлем","Привет"],["Сәлеметсіз бе","Здравствуйте"],["Қайырлы таң","Доброе утро"],["Рақмет","Спасибо"],["Иә","Да"],["Жоқ","Нет"],["Сау бол","Пока"]]},
+{id:2,title:"Отбасы",sub:"Семья",fact:"Казахи традиционно знают свою родословную до седьмого колена (жеті ата).",cards:[["Ана","Мама"],["Әке","Папа"],["Аға","Старший брат"],["Әпке","Старшая сестра"],["Әже","Бабушка"],["Ата","Дедушка"],["Бала","Ребёнок"]]},
+{id:3,title:"Қазақстан",sub:"Страна и символы",fact:"На флаге Казахстана изображены солнце и степной орёл на небесно-голубом фоне.",cards:[["Қазақстан","Казахстан"],["Әнұран","Гимн"],["Ту","Флаг"],["Елтаңба","Герб"],["Астана","Столица"],["Дала","Степь"],["Домбыра","Домбра"],["Наурыз","Праздник весны"]]}
+];
+var RANKS=[["Ауыл",0],["Батыр",100],["Хан",300]];
+var S={xp:0,streak:0,last:"",done:{}};
+try{var raw=localStorage.getItem("sylu");if(raw)S=JSON.parse(raw);}catch(e){}
+function save(){try{localStorage.setItem("sylu",JSON.stringify(S));}catch(e){}}
+function today(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+function yest(){var d=new Date(Date.now()-864e5);return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+function rank(){var r=RANKS[0],n=null;for(var i=0;i<RANKS.length;i++){if(S.xp>=RANKS[i][1]){r=RANKS[i];n=RANKS[i+1]||null;}}return{name:r[0],from:r[1],next:n};}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+var el=document.getElementById("app");
+var L=null,i=0,shown=false,Q=[],qi=0,score=0,locked=false;
+function header(){var r=rank(),p=r.next?Math.min(100,(S.xp-r.from)/(r.next[1]-r.from)*100):100;
+return '<div class="top"><h1>Сылу 🇰🇿</h1><div>Қазақ тілі: красивый язык</div><div class="stats"><span class="pill">'+r.name+'</span><span class="pill">⭐ '+S.xp+' XP</span><span class="pill">🔥 '+S.streak+'</span></div><div class="bar"><i style="width:'+p+'%"></i></div></div>';}
+function home(){L=null;var h=header();
+LESSONS.forEach(function(l){h+='<button class="card lesson" onclick="openLesson('+l.id+')"><span><b>'+l.title+'</b><br><small>'+l.sub+' · '+l.cards.length+' слов</small></span><span>'+(S.done[l.id]?'✅':'▶')+'</span></button>';});
+h+='<p class="small center">Пройди урок и получи XP. Ранги: Ауыл, Батыр, Хан.</p>';el.innerHTML=h;}
+function openLesson(id){L=LESSONS.filter(function(x){return x.id===id;})[0];i=0;shown=false;cards();}
+function cards(){var c=L.cards[i];
+el.innerHTML=header()+'<div class="small center">'+L.title+' · карточка '+(i+1)+' из '+L.cards.length+'</div><div class="card flash" onclick="flip()"><div class="kk">'+c[0]+'</div><div class="ru">'+(shown?c[1]:'Нажми, чтобы увидеть перевод')+'</div></div><button class="btn" onclick="nextCard()">'+(i<L.cards.length-1?'Далее':'К тесту')+'</button><button class="btn ghost" onclick="home()">Назад</button>';}
+function flip(){shown=!shown;cards();}
+function nextCard(){shown=false;if(i<L.cards.length-1){i++;cards();}else startQuiz();}
+function startQuiz(){Q=shuffle(L.cards);qi=0;score=0;locked=false;quiz();}
+function quiz(){var c=Q[qi],all=[];LESSONS.forEach(function(l){l.cards.forEach(function(x){if(x[1]!==c[1])all.push(x[1]);});});
+var opts=shuffle(shuffle(all).slice(0,3).concat([c[1]]));
+var h=header()+'<div class="small center">Тест · вопрос '+(qi+1)+' из '+Q.length+'</div><div class="card center"><div class="small">Переведи</div><div class="kk">'+c[0]+'</div></div>';
+opts.forEach(function(o,k){h+='<button class="opt" data-v="'+o+'" onclick="answer(this)">'+o+'</button>';});
+el.innerHTML=h;}
+function answer(b){if(locked)return;locked=true;var c=Q[qi],ok=b.getAttribute("data-v")===c[1];
+if(ok){b.classList.add("ok");score++;S.xp+=10;save();}else{b.classList.add("bad");var all=document.querySelectorAll(".opt");for(var k=0;k<all.length;k++){if(all[k].getAttribute("data-v")===c[1])all[k].classList.add("ok");}}
+setTimeout(function(){locked=false;if(qi<Q.length-1){qi++;quiz();}else finish();},800);}
+function finish(){var t=today();S.xp+=20;
+if(S.last!==t){S.streak=(S.last===yest())?S.streak+1:1;S.last=t;}
+S.done[L.id]=true;save();
+el.innerHTML=header()+'<div class="card center"><div class="kk">Жарайсың! 🎉</div><p>Правильных ответов: '+score+' из '+Q.length+'</p><p>+20 XP за урок</p><div class="fact">💡 '+L.fact+'</div></div><button class="btn" onclick="home()">К урокам</button>';}
+home();
+</script>
+</body>
+</html>
